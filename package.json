@@ -1,0 +1,15 @@
+{
+  "name": "channelwave-server",
+  "version": "1.0.0",
+  "description": "Radio-style channel chat server, 100 channels, websocket instant messaging, channel ownership + private codes",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
