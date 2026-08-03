@@ -113,6 +113,21 @@ function handleSetPrivate(ws, data) {
   broadcast(ws.channel, { type: 'system', text: `channel is now ${ch.private ? 'private' : 'public'}`, t: Date.now() });
 }
 
+function handleRename(ws, data) {
+  const newName = (data.name || '').toString().trim().slice(0, 18);
+  if (!newName || newName === ws.name) return;
+  const oldName = ws.name;
+  ws.name = newName;
+  if (ws.channel != null) {
+    broadcast(ws.channel, { type: 'system', text: `${oldName} is now known as ${newName}`, t: Date.now() }, ws);
+  }
+}
+
+function handleTyping(ws) {
+  if (ws.channel == null) return;
+  broadcast(ws.channel, { type: 'typing', id: ws.id, name: ws.name }, ws);
+}
+
 const server = http.createServer((req, res) => {
   let filePath = req.url === '/' ? '/index.html' : req.url;
   filePath = path.join(__dirname, 'public', filePath);
@@ -146,6 +161,8 @@ wss.on('connection', (ws) => {
       case 'join': return handleJoin(ws, data);
       case 'message': return handleMessage(ws, data);
       case 'setPrivate': return handleSetPrivate(ws, data);
+      case 'rename': return handleRename(ws, data);
+      case 'typing': return handleTyping(ws);
       default: return;
     }
   });
