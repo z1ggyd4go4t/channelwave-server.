@@ -6,23 +6,23 @@
 <title>ChannelWave</title>
 <style>
   :root{
-    --dial-black:#141310;
-    --dial-panel:#1e1c17;
-    --brass:#c9a15a;
-    --brass-dim:#8a713f;
-    --amber:#ff9d3d;
-    --amber-dim:#7a4d1a;
-    --paper:#eee6d3;
-    --paper-dim:#a89f8a;
-    --static:#3a3730;
-    --good:#7fbf7f;
-    --bad:#d97757;
+    --dial-black:#0e1013;
+    --dial-panel:#181b20;
+    --brass:#8fc4ee;
+    --brass-dim:#4d7699;
+    --amber:#5ec8ff;
+    --amber-dim:#2a5570;
+    --paper:#dbe6f0;
+    --paper-dim:#7c8a99;
+    --static:#2c3038;
+    --good:#7fbf9f;
+    --bad:#d97777;
   }
   *{box-sizing:border-box;}
   body{margin:0;}
   .radio-app{
     min-height:100vh;
-    background: radial-gradient(ellipse at 50% -10%, #2a2820 0%, var(--dial-black) 60%);
+    background: radial-gradient(ellipse at 50% -10%, #1c222b 0%, var(--dial-black) 60%);
     color:var(--paper);
     font-family:'Courier New', ui-monospace, monospace;
     display:flex;
@@ -37,7 +37,7 @@
 
   .console{
     width:100%; max-width:560px;
-    background:linear-gradient(180deg,#242119,#181611);
+    background:linear-gradient(180deg,#1c2027,#12151a);
     border:1px solid #3a3527; border-radius:14px;
     padding:12px;
     box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
@@ -49,14 +49,14 @@
     align-items:center;
     gap:8px;
     background:var(--dial-panel);
-    border:1px solid #38341f;
+    border:1px solid #2a3038;
     border-radius:10px;
     padding:8px 10px;
     margin-bottom:10px;
   }
   .tuner-bar button{
-    background:linear-gradient(180deg,#2c2818,#1c1a12);
-    border:1px solid #46402a;
+    background:linear-gradient(180deg,#1e242c,#141920);
+    border:1px solid #3a4450;
     color:var(--paper);
     font-family:inherit;
     font-size:12px;
@@ -76,8 +76,8 @@
   .freq-readout small{ font-size:11px; color:var(--brass-dim); }
   .tuner-bar input[type=number]{
     width:48px;
-    background:#100f0b;
-    border:1px solid #46402a;
+    background:#0e1116;
+    border:1px solid #3a4450;
     color:var(--amber);
     font-family:inherit;
     text-align:center;
@@ -101,13 +101,13 @@
   }
   .sub-row input{
     flex:1;
-    background:#100f0b; border:1px solid #38341f; color:var(--paper);
+    background:#0e1116; border:1px solid #2a3038; color:var(--paper);
     font-family:inherit; padding:8px 10px; border-radius:8px; font-size:13px;
   }
   .member-count{ font-size:11px; color:var(--paper-dim); white-space:nowrap; }
 
   .speaker{
-    background:#0d0c09; border:1px solid #38341f; border-radius:10px;
+    background:#0b0d10; border:1px solid #2a3038; border-radius:10px;
     padding:10px; height:320px; overflow-y:auto;
     display:flex; flex-direction:column; gap:7px;
   }
@@ -116,10 +116,10 @@
 
   .transmission{
     max-width:82%; padding:7px 10px; border-radius:9px;
-    font-size:13px; line-height:1.4; background:#1c1a13;
-    border:1px solid #33301f; align-self:flex-start;
+    font-size:13px; line-height:1.4; background:#181d24;
+    border:1px solid #2a3038; align-self:flex-start;
   }
-  .transmission.mine{ align-self:flex-end; background:#2a2110; border-color:var(--amber-dim); }
+  .transmission.mine{ align-self:flex-end; background:#1a2a38; border-color:var(--amber-dim); }
   .transmission .who{ font-size:10px; color:var(--brass); margin-bottom:2px; text-transform:uppercase; }
   .transmission.mine .who{ color:var(--amber); }
   .transmission .when{ font-size:9px; color:var(--paper-dim); margin-left:6px; }
@@ -128,7 +128,7 @@
 
   .mic-row{ display:flex; gap:8px; margin-top:10px; }
   .mic-row input{
-    flex:1; background:#100f0b; border:1px solid #38341f; color:var(--paper);
+    flex:1; background:#0e1116; border:1px solid #2a3038; color:var(--paper);
     font-family:inherit; padding:10px 12px; border-radius:8px; font-size:14px;
   }
   .mic-row button{
@@ -145,19 +145,19 @@
   }
   .modal-backdrop.show{ display:flex; }
   .modal{
-    background:#1e1c17; border:1px solid #46402a; border-radius:12px;
+    background:#181b20; border:1px solid #3a4450; border-radius:12px;
     padding:18px; width:280px; text-align:center;
   }
   .modal h3{ margin:0 0 10px; font-size:14px; color:var(--amber); }
   .modal input{
-    width:100%; background:#100f0b; border:1px solid #38341f; color:var(--paper);
+    width:100%; background:#0e1116; border:1px solid #2a3038; color:var(--paper);
     font-family:inherit; padding:9px; border-radius:8px; margin-bottom:10px; font-size:13px;
   }
   .modal button{
     width:100%; padding:9px; border-radius:8px; border:none; cursor:pointer;
     background:linear-gradient(180deg,var(--amber),#c9701a); color:#1a1204; font-weight:bold;
   }
-  .modal .cancel{ background:none; border:1px solid #46402a; color:var(--paper); margin-top:6px; }
+  .modal .cancel{ background:none; border:1px solid #3a4450; color:var(--paper); margin-top:6px; }
 </style>
 </head>
 <body>
