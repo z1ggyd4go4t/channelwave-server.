@@ -38,12 +38,11 @@
   .console{
     width:100%; max-width:560px;
     background:linear-gradient(180deg,#1c2027,#12151a);
-    border:1px solid #3a3527; border-radius:14px;
+    border:1px solid #2a3038; border-radius:14px;
     padding:12px;
     box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
   }
 
-  /* compact tuner bar - single row */
   .tuner-bar{
     display:flex;
     align-items:center;
@@ -68,7 +67,7 @@
   .freq-readout{
     font-size:19px;
     color:var(--amber);
-    text-shadow:0 0 10px rgba(255,157,61,.5);
+    text-shadow:0 0 10px rgba(94,200,255,.5);
     min-width:58px;
     text-align:center;
     flex-shrink:0;
@@ -106,13 +105,25 @@
   }
   .member-count{ font-size:11px; color:var(--paper-dim); white-space:nowrap; }
 
+  .icon-btn{
+    background:linear-gradient(180deg,#1e242c,#141920);
+    border:1px solid #3a4450;
+    color:var(--paper);
+    font-size:13px;
+    padding:6px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .icon-btn.active{ border-color:var(--amber); box-shadow:0 0 6px rgba(94,200,255,.4); }
+
   .speaker{
     background:#0b0d10; border:1px solid #2a3038; border-radius:10px;
     padding:10px; height:320px; overflow-y:auto;
     display:flex; flex-direction:column; gap:7px;
   }
   .speaker::-webkit-scrollbar{ width:8px; }
-  .speaker::-webkit-scrollbar-thumb{ background:#3a3527; border-radius:4px; }
+  .speaker::-webkit-scrollbar-thumb{ background:#2a3038; border-radius:4px; }
 
   .transmission{
     max-width:82%; padding:7px 10px; border-radius:9px;
@@ -126,44 +137,15 @@
   .system-line{ align-self:center; font-size:10.5px; color:var(--paper-dim); font-style:italic; }
   .empty-static{ margin:auto; text-align:center; color:var(--paper-dim); font-size:12px; }
 
-  .icon-btn{
-    background:linear-gradient(180deg,#1e242c,#141920);
-    border:1px solid #3a4450;
-    color:var(--paper);
-    font-size:13px;
-    padding:6px 8px;
-    border-radius:6px;
-    cursor:pointer;
-    flex-shrink:0;
-  }
-  .icon-btn.active{ border-color:var(--amber); box-shadow:0 0 6px rgba(94,200,255,.4); }
-
-  .gif-panel{
-    background:#0b0d10; border:1px solid #2a3038; border-radius:10px;
-    padding:8px; margin-top:6px; max-height:160px; overflow-y:auto;
-  }
-  .gif-grid{
-    display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:8px;
-  }
-  .gif-grid img{
-    width:100%; height:52px; object-fit:cover; border-radius:6px;
-    cursor:pointer; border:1px solid #2a3038;
-  }
-  .gif-empty{ font-size:11px; color:var(--paper-dim); grid-column:1/-1; text-align:center; padding:8px 0; }
-  .gif-add{
-    display:block; text-align:center; font-size:11px; color:var(--brass);
-    border:1px dashed #3a4450; border-radius:8px; padding:8px; cursor:pointer;
-  }
-
-  .transmission img.gif-img{
-    max-width:180px; border-radius:8px; display:block; margin-top:4px;
-  }
-
   .reply-quote{
     font-size:10.5px; color:var(--paper-dim); border-left:2px solid var(--amber-dim);
     padding-left:6px; margin-bottom:4px; opacity:.85;
   }
   .reply-quote b{ color:var(--brass); }
+
+  .transmission img.gif-img{
+    max-width:180px; border-radius:8px; display:block; margin-top:4px;
+  }
 
   .msg-actions{
     display:flex; gap:6px; margin-top:4px; align-items:center;
@@ -213,13 +195,30 @@
     30%{ transform:translateY(-3px); opacity:1; }
   }
 
+  .gif-panel{
+    background:#0b0d10; border:1px solid #2a3038; border-radius:10px;
+    padding:8px; margin-top:6px; max-height:160px; overflow-y:auto;
+  }
+  .gif-grid{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:8px;
+  }
+  .gif-grid img{
+    width:100%; height:52px; object-fit:cover; border-radius:6px;
+    cursor:pointer; border:1px solid #2a3038;
+  }
+  .gif-empty{ font-size:11px; color:var(--paper-dim); grid-column:1/-1; text-align:center; padding:8px 0; }
+  .gif-add{
+    display:block; text-align:center; font-size:11px; color:var(--brass);
+    border:1px dashed #3a4450; border-radius:8px; padding:8px; cursor:pointer;
+  }
+
   .mic-row{ display:flex; gap:8px; margin-top:4px; }
   .mic-row input{
     flex:1; background:#0e1116; border:1px solid #2a3038; color:var(--paper);
     font-family:inherit; padding:10px 12px; border-radius:8px; font-size:14px;
   }
   .mic-row button{
-    background:linear-gradient(180deg,var(--amber),#c9701a); border:none; color:#1a1204;
+    background:linear-gradient(180deg,var(--amber),#2a5570); border:none; color:#0e1116;
     font-weight:bold; padding:0 18px; border-radius:8px; cursor:pointer;
   }
   .mic-row button:disabled{ opacity:.4; cursor:not-allowed; }
@@ -242,7 +241,7 @@
   }
   .modal button{
     width:100%; padding:9px; border-radius:8px; border:none; cursor:pointer;
-    background:linear-gradient(180deg,var(--amber),#c9701a); color:#1a1204; font-weight:bold;
+    background:linear-gradient(180deg,var(--amber),#2a5570); color:#0e1116; font-weight:bold;
   }
   .modal .cancel{ background:none; border:1px solid #3a4450; color:var(--paper); margin-top:6px; }
 </style>
@@ -312,163 +311,47 @@
 
 <script>
 (function(){
-  const TOTAL_CHANNELS = 100;
-  let currentChannel = 1;
-  let ws = null;
-  let myId = null;
-  let isOwner = false;
-  let isPrivate = false;
-  let pendingJoinChannel = null;
+  var TOTAL_CHANNELS = 100;
+  var currentChannel = 1;
+  var ws = null;
+  var myId = null;
+  var isOwner = false;
+  var isPrivate = false;
+  var pendingJoinChannel = null;
+  var replyingTo = null;
 
-  const freqReadout = document.getElementById('freqReadout');
-  const speaker = document.getElementById('speaker');
-  const nameInput = document.getElementById('nameInput');
-  const msgInput = document.getElementById('msgInput');
-  const sendBtn = document.getElementById('sendBtn');
-  const statusDot = document.getElementById('statusDot');
-  const lockBtn = document.getElementById('lockBtn');
-  const memberCount = document.getElementById('memberCount');
-  const freqJump = document.getElementById('freqJump');
+  var freqReadout = document.getElementById('freqReadout');
+  var speaker = document.getElementById('speaker');
+  var nameInput = document.getElementById('nameInput');
+  var msgInput = document.getElementById('msgInput');
+  var sendBtn = document.getElementById('sendBtn');
+  var statusDot = document.getElementById('statusDot');
+  var lockBtn = document.getElementById('lockBtn');
+  var memberCount = document.getElementById('memberCount');
+  var freqJump = document.getElementById('freqJump');
+  var typingLine = document.getElementById('typingLine');
+  var filterBtn = document.getElementById('filterBtn');
+  var resetBtn = document.getElementById('resetBtn');
+  var gifBtn = document.getElementById('gifBtn');
+  var gifPanel = document.getElementById('gifPanel');
+  var gifGrid = document.getElementById('gifGrid');
+  var gifFileInput = document.getElementById('gifFileInput');
+  var replyBanner = document.getElementById('replyBanner');
+  var replyBannerText = document.getElementById('replyBannerText');
+  var replyBannerCancel = document.getElementById('replyBannerCancel');
 
-  const typingLine = document.getElementById('typingLine');
-  const typingUsers = new Map(); // id -> {name, timeout}
+  var codeModalBackdrop = document.getElementById('codeModalBackdrop');
+  var codeModalTitle = document.getElementById('codeModalTitle');
+  var codeModalInput = document.getElementById('codeModalInput');
+  var codeModalGo = document.getElementById('codeModalGo');
+  var codeModalCancel = document.getElementById('codeModalCancel');
 
-  const dotsHtml = '<span class="typing-dots"><span></span><span></span><span></span></span>';
-
-  function renderTypingLine(){
-    const names = [...typingUsers.values()].map(v => v.name);
-    if(names.length === 0){ typingLine.innerHTML = ''; return; }
-    const label = names.length === 1 ? names[0] + ' is typing' : names.join(', ') + ' are typing';
-    typingLine.innerHTML = escapeHtml(label) + dotsHtml;
-  }
-
-  function markTyping(id, name){
-    if(typingUsers.has(id)) clearTimeout(typingUsers.get(id).timeout);
-    const timeout = setTimeout(() => { typingUsers.delete(id); renderTypingLine(); }, 3000);
-    typingUsers.set(id, { name, timeout });
-    renderTypingLine();
-  }
-
-  function clearTypingUsers(){
-    typingUsers.forEach(v => clearTimeout(v.timeout));
-    typingUsers.clear();
-    renderTypingLine();
-  }
-
-  let replyingTo = null; // {mid, name, text}
-
-  // ---- no slur mode (client-side censor, per device) ----
-  // add your own words to this list - kept generic here so nothing explicit ships in the code
-  const FILTERED_WORDS = ['badword1', 'badword2'];
-  let filterOn = false;
-  try{ filterOn = localStorage.getItem('channelwave_filter') === '1'; }catch(e){}
-  function updateFilterBtn(){ filterBtn.classList.toggle('active', filterOn); }
-  updateFilterBtn();
-  filterBtn.addEventListener('click', () => {
-    filterOn = !filterOn;
-    try{ localStorage.setItem('channelwave_filter', filterOn ? '1' : '0'); }catch(e){}
-    updateFilterBtn();
-    speaker.querySelectorAll('.transmission .msg-text').forEach(el => {
-      const raw = el.dataset.raw || '';
-      el.innerHTML = escapeHtml(censor(raw));
-    });
-  });
-  function censor(text){
-    if(!filterOn) return text;
-    let out = text;
-    FILTERED_WORDS.forEach(w => {
-      const re = new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
-      out = out.replace(re, m => '#'.repeat(m.length));
-    });
-    return out;
-  }
-
-  // ---- gif shelf (per device, stored locally) ----
-  function loadGifs(){
-    try{ return JSON.parse(localStorage.getItem('channelwave_gifs') || '[]'); }catch(e){ return []; }
-  }
-  function saveGifs(list){
-    try{ localStorage.setItem('channelwave_gifs', JSON.stringify(list)); }catch(e){}
-  }
-  function renderGifGrid(){
-    const gifs = loadGifs();
-    if(gifs.length === 0){
-      gifGrid.innerHTML = '<div class="gif-empty">no gifs saved yet</div>';
-      return;
-    }
-    gifGrid.innerHTML = '';
-    gifs.forEach((dataUrl, idx) => {
-      const img = document.createElement('img');
-      img.src = dataUrl;
-      img.addEventListener('click', () => { sendImage(dataUrl); gifPanel.style.display = 'none'; });
-      gifGrid.appendChild(img);
-    });
-  }
-  gifBtn.addEventListener('click', () => {
-    const showing = gifPanel.style.display !== 'none';
-    gifPanel.style.display = showing ? 'none' : 'block';
-    if(!showing) renderGifGrid();
-  });
-  gifFileInput.addEventListener('change', () => {
-    const file = gifFileInput.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      const gifs = loadGifs();
-      gifs.push(dataUrl);
-      saveGifs(gifs);
-      renderGifGrid();
-    };
-    reader.readAsDataURL(file);
-    gifFileInput.value = '';
-  });
-  function sendImage(dataUrl){
-    if(ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type:'message', text:'', image: dataUrl, replyTo: replyingTo }));
-    clearReply();
-  }
-
-  function setReply(mid, name, text){
-    replyingTo = { mid, name, text: text.slice(0,120) };
-    replyBannerText.textContent = 'replying to ' + name + ': ' + (text.slice(0,40) || 'a gif');
-    replyBanner.style.display = 'flex';
-    msgInput.focus();
-  }
-  function clearReply(){
-    replyingTo = null;
-    replyBanner.style.display = 'none';
-  }
-  replyBannerCancel.addEventListener('click', clearReply);
-
-  resetBtn.addEventListener('click', () => {
-    if(!confirm('reset this channel? this clears all messages for everyone.')) return;
-    ws.send(JSON.stringify({ type:'resetChannel' }));
-  });
-
-  function updateResetBtnVisibility(){
-    resetBtn.style.display = (isOwner && isPrivate) ? 'inline-block' : 'none';
-  }
-
-  const EMOJI_SET = ['👍','❤️','😂','😮','🔥'];
-
-  const codeModalBackdrop = document.getElementById('codeModalBackdrop');
-  const filterBtn = document.getElementById('filterBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  const gifBtn = document.getElementById('gifBtn');
-  const gifPanel = document.getElementById('gifPanel');
-  const gifGrid = document.getElementById('gifGrid');
-  const gifFileInput = document.getElementById('gifFileInput');
-  const replyBanner = document.getElementById('replyBanner');
-  const replyBannerText = document.getElementById('replyBannerText');
-  const replyBannerCancel = document.getElementById('replyBannerCancel');
-  const codeModalTitle = document.getElementById('codeModalTitle');
-  const codeModalInput = document.getElementById('codeModalInput');
-  const codeModalGo = document.getElementById('codeModalGo');
-  const codeModalCancel = document.getElementById('codeModalCancel');
+  var EMOJI_SET = ['👍','❤️','😂','😮','🔥'];
+  var typingUsers = new Map(); // id -> { name, timeout }
+  var dotsHtml = '<span class="typing-dots"><span></span><span></span><span></span></span>';
 
   function escapeHtml(s){
-    const d = document.createElement('div');
+    var d = document.createElement('div');
     d.textContent = s;
     return d.innerHTML;
   }
@@ -478,25 +361,26 @@
   }
 
   function getName(){
-    let n = nameInput.value.trim();
+    var n = nameInput.value.trim();
     if(!n) n = 'unknown';
     return n.slice(0,18);
   }
 
-  // load saved name for this device
+  // ---- load saved name for this device ----
   try{
-    const savedName = localStorage.getItem('channelwave_name');
+    var savedName = localStorage.getItem('channelwave_name');
     if(savedName) nameInput.value = savedName;
   }catch(e){}
 
-  let notifyEnabled = false;
-  if('Notification' in window){
-    if(Notification.permission === 'granted') notifyEnabled = true;
+  // ---- notifications ----
+  var notifyEnabled = false;
+  if('Notification' in window && Notification.permission === 'granted'){
+    notifyEnabled = true;
   }
   function requestNotifications(){
     if(!('Notification' in window)) return;
     if(Notification.permission === 'default'){
-      Notification.requestPermission().then(p => { notifyEnabled = (p === 'granted'); });
+      Notification.requestPermission().then(function(p){ notifyEnabled = (p === 'granted'); });
     }else if(Notification.permission === 'granted'){
       notifyEnabled = true;
     }
@@ -505,23 +389,148 @@
     if(!notifyEnabled) return;
     if(document.visibilityState === 'visible') return;
     try{
-      new Notification(name + ' on CH' + String(currentChannel).padStart(2,'0'), { body: text });
+      new Notification(name + ' on CH' + String(currentChannel).padStart(2,'0'), { body: text || 'sent a gif' });
     }catch(e){}
   }
 
+  // ---- no slur mode (client-side censor, per device) ----
+  // add your own words to this list, kept as placeholders here on purpose
+  var FILTERED_WORDS = ['badword1', 'badword2'];
+  var filterOn = false;
+  try{ filterOn = localStorage.getItem('channelwave_filter') === '1'; }catch(e){}
+
+  function updateFilterBtn(){ filterBtn.classList.toggle('active', filterOn); }
+  updateFilterBtn();
+
+  function censor(text){
+    if(!filterOn || !text) return text;
+    var out = text;
+    FILTERED_WORDS.forEach(function(w){
+      var escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re = new RegExp('\\b' + escaped + '\\b', 'gi');
+      out = out.replace(re, function(m){ return '#'.repeat(m.length); });
+    });
+    return out;
+  }
+
+  filterBtn.addEventListener('click', function(){
+    filterOn = !filterOn;
+    try{ localStorage.setItem('channelwave_filter', filterOn ? '1' : '0'); }catch(e){}
+    updateFilterBtn();
+    var spans = speaker.querySelectorAll('.msg-text');
+    spans.forEach(function(el){
+      var raw = el.getAttribute('data-raw') || '';
+      el.innerHTML = escapeHtml(censor(raw));
+    });
+  });
+
+  // ---- gif shelf (per device, stored locally in the browser) ----
+  function loadGifs(){
+    try{ return JSON.parse(localStorage.getItem('channelwave_gifs') || '[]'); }catch(e){ return []; }
+  }
+  function saveGifs(list){
+    try{ localStorage.setItem('channelwave_gifs', JSON.stringify(list)); }catch(e){}
+  }
+  function renderGifGrid(){
+    var gifs = loadGifs();
+    if(gifs.length === 0){
+      gifGrid.innerHTML = '<div class="gif-empty">no gifs saved yet</div>';
+      return;
+    }
+    gifGrid.innerHTML = '';
+    gifs.forEach(function(dataUrl){
+      var img = document.createElement('img');
+      img.src = dataUrl;
+      img.addEventListener('click', function(){
+        sendImage(dataUrl);
+        gifPanel.style.display = 'none';
+      });
+      gifGrid.appendChild(img);
+    });
+  }
+  gifBtn.addEventListener('click', function(){
+    var showing = gifPanel.style.display !== 'none';
+    gifPanel.style.display = showing ? 'none' : 'block';
+    if(!showing) renderGifGrid();
+  });
+  gifFileInput.addEventListener('change', function(){
+    var file = gifFileInput.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      var dataUrl = reader.result;
+      var gifs = loadGifs();
+      gifs.push(dataUrl);
+      saveGifs(gifs);
+      renderGifGrid();
+    };
+    reader.readAsDataURL(file);
+    gifFileInput.value = '';
+  });
+  function sendImage(dataUrl){
+    if(!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'message', text:'', image: dataUrl, replyTo: replyingTo }));
+    clearReply();
+  }
+
+  // ---- reply state ----
+  function setReply(mid, name, text){
+    replyingTo = { mid: mid, name: name, text: (text || '').slice(0,120) };
+    replyBannerText.textContent = 'replying to ' + name + ': ' + ((text || '').slice(0,40) || 'a gif');
+    replyBanner.style.display = 'flex';
+    msgInput.focus();
+  }
+  function clearReply(){
+    replyingTo = null;
+    replyBanner.style.display = 'none';
+  }
+  replyBannerCancel.addEventListener('click', clearReply);
+
+  // ---- owner reset ----
+  resetBtn.addEventListener('click', function(){
+    if(!confirm('reset this channel? this clears all messages for everyone.')) return;
+    if(ws && ws.readyState === WebSocket.OPEN){
+      ws.send(JSON.stringify({ type:'resetChannel' }));
+    }
+  });
+  function updateResetBtnVisibility(){
+    resetBtn.style.display = (isOwner && isPrivate) ? 'inline-block' : 'none';
+  }
+
+  // ---- typing indicator ----
+  function renderTypingLine(){
+    var names = [];
+    typingUsers.forEach(function(v){ names.push(v.name); });
+    if(names.length === 0){ typingLine.innerHTML = ''; return; }
+    var label = names.length === 1 ? (names[0] + ' is typing') : (names.join(', ') + ' are typing');
+    typingLine.innerHTML = escapeHtml(label) + dotsHtml;
+  }
+  function markTyping(id, name){
+    if(typingUsers.has(id)) clearTimeout(typingUsers.get(id).timeout);
+    var timeout = setTimeout(function(){ typingUsers.delete(id); renderTypingLine(); }, 3000);
+    typingUsers.set(id, { name: name, timeout: timeout });
+    renderTypingLine();
+  }
+  function clearTypingUsers(){
+    typingUsers.forEach(function(v){ clearTimeout(v.timeout); });
+    typingUsers.clear();
+    renderTypingLine();
+  }
+
+  // ---- websocket connection ----
   function connect(){
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(proto + '//' + location.host);
 
-    ws.onopen = () => { statusDot.classList.add('live'); };
-    ws.onclose = () => {
+    ws.onopen = function(){ statusDot.classList.add('live'); };
+    ws.onclose = function(){
       statusDot.classList.remove('live');
       setTimeout(connect, 1500);
     };
-    ws.onerror = () => {};
+    ws.onerror = function(){};
 
-    ws.onmessage = (evt) => {
-      let data;
+    ws.onmessage = function(evt){
+      var data;
       try{ data = JSON.parse(evt.data); }catch(e){ return; }
       handleServerMessage(data);
     };
@@ -533,6 +542,7 @@
         myId = data.id;
         joinChannel(currentChannel);
         break;
+
       case 'joined':
         isOwner = data.isOwner;
         isPrivate = data.private;
@@ -546,40 +556,50 @@
           addSystemLine('you are the owner of this channel');
         }
         break;
+
       case 'needCode':
         openCodeModal(data.channel);
         break;
+
       case 'message':
         appendMessage(data);
         if(data.id !== myId) notify(data.name, data.text);
         typingUsers.delete(data.id);
         renderTypingLine();
         break;
+
       case 'system':
         addSystemLine(data.text);
         break;
+
       case 'presence':
         memberCount.textContent = data.memberCount + ' online';
         break;
+
       case 'privacyChanged':
         isPrivate = data.private;
         lockBtn.textContent = isPrivate ? '🔒' : '🔓';
         updateResetBtnVisibility();
         break;
+
       case 'error':
         addSystemLine('error: ' + data.text);
         break;
+
       case 'typing':
         markTyping(data.id, data.name);
         break;
+
       case 'ownerChanged':
         isOwner = data.isOwner;
         lockBtn.title = isOwner ? (isPrivate ? 'make public' : 'make private') : 'channel privacy';
         updateResetBtnVisibility();
         break;
+
       case 'reaction':
         updateReactionUI(data.mid, data.reactions);
         break;
+
       case 'channelReset':
         clearReply();
         speaker.innerHTML = '<div class="empty-static">— static —<br>no transmissions on this channel yet</div>';
@@ -597,14 +617,15 @@
   }
 
   function appendMessage(m){
-    const emptyNotice = speaker.querySelector('.empty-static');
+    var emptyNotice = speaker.querySelector('.empty-static');
     if(emptyNotice) emptyNotice.remove();
-    const div = document.createElement('div');
-    div.className = 'transmission' + (m.id === myId ? ' mine' : '');
-    div.dataset.mid = m.mid || '';
-    const time = new Date(m.t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-    let html = '<div class="who">' + escapeHtml(m.name) + '<span class="when">' + time + '</span></div>';
+    var div = document.createElement('div');
+    div.className = 'transmission' + (m.id === myId ? ' mine' : '');
+    div.setAttribute('data-mid', m.mid || '');
+    var time = new Date(m.t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    var html = '<div class="who">' + escapeHtml(m.name) + '<span class="when">' + time + '</span></div>';
 
     if(m.replyTo){
       html += '<div class="reply-quote"><b>' + escapeHtml(m.replyTo.name) + '</b> ' + escapeHtml(m.replyTo.text || 'gif') + '</div>';
@@ -615,52 +636,58 @@
     if(m.image){
       html += '<img class="gif-img" src="' + m.image + '">';
     }
-    html += '<div class="reaction-row" id="rx-' + (m.mid||'') + '"></div>';
-    html += '<div class="emoji-strip" id="es-' + (m.mid||'') + '">' + EMOJI_SET.map(e => '<span data-emoji="'+e+'">'+e+'</span>').join('') + '</div>';
+
+    var mid = m.mid || '';
+    html += '<div class="reaction-row" id="rx-' + mid + '"></div>';
+    html += '<div class="emoji-strip" id="es-' + mid + '">' + EMOJI_SET.map(function(e){ return '<span data-emoji="' + e + '">' + e + '</span>'; }).join('') + '</div>';
     html += '<div class="msg-actions"><button class="react-toggle">+ react</button><button class="reply-toggle">↩ reply</button></div>';
 
     div.innerHTML = html;
     speaker.appendChild(div);
     speaker.scrollTop = speaker.scrollHeight;
 
-    if(m.mid){
-      div.querySelector('.react-toggle').addEventListener('click', () => {
+    if(mid){
+      div.querySelector('.react-toggle').addEventListener('click', function(){
         div.querySelector('.emoji-strip').classList.toggle('show');
       });
-      div.querySelectorAll('.emoji-strip span').forEach(sp => {
-        sp.addEventListener('click', () => {
-          ws.send(JSON.stringify({ type:'react', mid: m.mid, emoji: sp.dataset.emoji }));
+      div.querySelectorAll('.emoji-strip span').forEach(function(sp){
+        sp.addEventListener('click', function(){
+          if(ws && ws.readyState === WebSocket.OPEN){
+            ws.send(JSON.stringify({ type:'react', mid: mid, emoji: sp.getAttribute('data-emoji') }));
+          }
           div.querySelector('.emoji-strip').classList.remove('show');
         });
       });
-      div.querySelector('.reply-toggle').addEventListener('click', () => {
-        setReply(m.mid, m.name, m.text || '');
+      div.querySelector('.reply-toggle').addEventListener('click', function(){
+        setReply(mid, m.name, m.text || '');
       });
-      if(m.reactions) updateReactionUI(m.mid, m.reactions);
+      if(m.reactions) updateReactionUI(mid, m.reactions);
     }
   }
 
   function updateReactionUI(mid, reactions){
-    const row = document.getElementById('rx-' + mid);
+    var row = document.getElementById('rx-' + mid);
     if(!row) return;
     row.innerHTML = '';
-    Object.keys(reactions || {}).forEach(emoji => {
-      const users = reactions[emoji];
+    Object.keys(reactions || {}).forEach(function(emoji){
+      var users = reactions[emoji];
       if(!users || users.length === 0) return;
-      const chip = document.createElement('span');
-      chip.className = 'reaction-chip' + (users.includes(myId) ? ' mine' : '');
+      var chip = document.createElement('span');
+      chip.className = 'reaction-chip' + (users.indexOf(myId) >= 0 ? ' mine' : '');
       chip.textContent = emoji + ' ' + users.length;
-      chip.addEventListener('click', () => {
-        ws.send(JSON.stringify({ type:'react', mid, emoji }));
+      chip.addEventListener('click', function(){
+        if(ws && ws.readyState === WebSocket.OPEN){
+          ws.send(JSON.stringify({ type:'react', mid: mid, emoji: emoji }));
+        }
       });
       row.appendChild(chip);
     });
   }
 
   function addSystemLine(text){
-    const emptyNotice = speaker.querySelector('.empty-static');
+    var emptyNotice = speaker.querySelector('.empty-static');
     if(emptyNotice) emptyNotice.remove();
-    const div = document.createElement('div');
+    var div = document.createElement('div');
     div.className = 'system-line';
     div.textContent = text;
     speaker.appendChild(div);
@@ -668,7 +695,7 @@
   }
 
   function joinChannel(ch, code){
-    if(ws.readyState !== WebSocket.OPEN) return;
+    if(!ws || ws.readyState !== WebSocket.OPEN) return;
     speaker.innerHTML = '<div class="empty-static">tuning in...</div>';
     ws.send(JSON.stringify({ type:'join', channel: ch, name: getName(), code: code || null }));
   }
@@ -689,53 +716,56 @@
     codeModalInput.focus();
   }
 
-  codeModalGo.addEventListener('click', () => {
-    const code = codeModalInput.value.trim();
+  codeModalGo.addEventListener('click', function(){
+    var code = codeModalInput.value.trim();
     codeModalBackdrop.classList.remove('show');
     if(pendingJoinChannel != null) joinChannel(pendingJoinChannel, code);
   });
-  codeModalCancel.addEventListener('click', () => {
+  codeModalCancel.addEventListener('click', function(){
     codeModalBackdrop.classList.remove('show');
-    // fall back to previous channel view
     speaker.innerHTML = '<div class="empty-static">enter a code to tune in</div>';
   });
-  codeModalInput.addEventListener('keydown', (e) => { if(e.key==='Enter') codeModalGo.click(); });
+  codeModalInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') codeModalGo.click(); });
 
-  document.getElementById('tuneUp').addEventListener('click', () => switchChannel(currentChannel+1));
-  document.getElementById('tuneDown').addEventListener('click', () => switchChannel(currentChannel-1));
-  document.getElementById('jumpGo').addEventListener('click', () => {
-    const v = parseInt(freqJump.value,10);
+  document.getElementById('tuneUp').addEventListener('click', function(){ switchChannel(currentChannel + 1); });
+  document.getElementById('tuneDown').addEventListener('click', function(){ switchChannel(currentChannel - 1); });
+  document.getElementById('jumpGo').addEventListener('click', function(){
+    var v = parseInt(freqJump.value, 10);
     if(!isNaN(v)) switchChannel(v);
   });
-  freqJump.addEventListener('keydown', (e) => {
-    if(e.key==='Enter'){ const v=parseInt(freqJump.value,10); if(!isNaN(v)) switchChannel(v); }
+  freqJump.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){
+      var v = parseInt(freqJump.value, 10);
+      if(!isNaN(v)) switchChannel(v);
+    }
   });
 
-  lockBtn.addEventListener('click', () => {
+  lockBtn.addEventListener('click', function(){
     if(!isOwner){
       addSystemLine('only the channel owner can change privacy');
       return;
     }
+    if(!ws || ws.readyState !== WebSocket.OPEN) return;
     if(isPrivate){
       ws.send(JSON.stringify({ type:'setPrivate', private:false }));
     }else{
-      const code = prompt('set a code for this channel:');
+      var code = prompt('set a code for this channel:');
       if(code && code.trim()){
         ws.send(JSON.stringify({ type:'setPrivate', private:true, code: code.trim() }));
       }
     }
   });
 
-  let renameDebounce = null;
-  nameInput.addEventListener('input', () => {
-    const has = nameInput.value.trim().length > 0;
+  var renameDebounce = null;
+  nameInput.addEventListener('input', function(){
+    var has = nameInput.value.trim().length > 0;
     msgInput.disabled = !has;
     sendBtn.disabled = !has;
 
     try{ localStorage.setItem('channelwave_name', nameInput.value.trim()); }catch(e){}
 
     clearTimeout(renameDebounce);
-    renameDebounce = setTimeout(() => {
+    renameDebounce = setTimeout(function(){
       if(has && ws && ws.readyState === WebSocket.OPEN){
         ws.send(JSON.stringify({ type:'rename', name: getName() }));
       }
@@ -750,18 +780,18 @@
   }
 
   function sendMessage(){
-    const text = msgInput.value.trim();
-    if(!text || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type:'message', text, replyTo: replyingTo }));
+    var text = msgInput.value.trim();
+    if(!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'message', text: text, replyTo: replyingTo }));
     msgInput.value = '';
     clearReply();
   }
   sendBtn.addEventListener('click', sendMessage);
-  msgInput.addEventListener('keydown', (e) => { if(e.key==='Enter') sendMessage(); });
+  msgInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') sendMessage(); });
 
-  let lastTypingSent = 0;
-  msgInput.addEventListener('input', () => {
-    const now = Date.now();
+  var lastTypingSent = 0;
+  msgInput.addEventListener('input', function(){
+    var now = Date.now();
     if(now - lastTypingSent > 1500 && ws && ws.readyState === WebSocket.OPEN){
       ws.send(JSON.stringify({ type:'typing' }));
       lastTypingSent = now;
