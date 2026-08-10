@@ -1,13 +1,14 @@
 {
   "name": "channelwave-server",
   "version": "1.0.0",
-  "description": "Radio-style channel chat server, 100 channels, websocket instant messaging, channel ownership + private codes",
+  "description": "Radio-style channel chat server: 100 channels, websocket instant messaging, ownership + private codes, gifs, reactions, replies, push notifications, PWA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": ">=18"
