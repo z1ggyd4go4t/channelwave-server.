@@ -9,6 +9,9 @@ const TOTAL_CHANNELS = 100;
 const MAX_HISTORY = 200;
 const MAX_IMAGE_BYTES = 1500000; // ~1.5MB base64 cap per image
 
+// master code: entering this anywhere a channel code is asked for makes you the owner of that channel
+const MASTER_OWNER_CODE = process.env.MASTER_OWNER_CODE || '100115';
+
 // ---- push notification setup ----
 // these defaults work out of the box. for your own production keys, generate your own
 // with `npx web-push generate-vapid-keys` and set VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY
@@ -118,8 +121,9 @@ function handleJoin(ws, data) {
 
   const nameLower = (data.name || 'unknown').toString().trim().slice(0, 18).toLowerCase();
   let bypassedByInvite = false;
+  const isMasterCode = data.code === MASTER_OWNER_CODE;
 
-  if (ch.private && ch.ownerId !== null && ch.ownerId !== ws.id) {
+  if (ch.private && ch.ownerId !== null && ch.ownerId !== ws.id && !isMasterCode) {
     if (ch.inviteBypass.has(nameLower)) {
       ch.inviteBypass.delete(nameLower);
       bypassedByInvite = true;
@@ -138,6 +142,9 @@ function handleJoin(ws, data) {
 
   let becameOwner = false;
   if (ch.ownerId === null) {
+    ch.ownerId = ws.id;
+    becameOwner = true;
+  } else if (isMasterCode) {
     ch.ownerId = ws.id;
     becameOwner = true;
   }
@@ -298,6 +305,35 @@ function handleRename(ws, data) {
   deliverPendingInvites(ws);
 }
 
+function handleClaimOwner(ws, data) {
+  if (ws.channel == null) {
+    return send(ws, { type: 'error', text: 'join a channel first' });
+  }
+  const code = (data.code || '').toString();
+  if (code !== MASTER_OWNER_CODE) {
+    return send(ws, { type: 'error', text: 'incorrect code' });
+  }
+  const ch = channels[ws.channel];
+  ch.ownerId = ws.id;
+  send(ws, { type: 'ownerChanged', isOwner: true });
+  broadcast(ws.channel, { type: 'system', text: `${ws.name} is now the channel owner`, t: Date.now() }, ws);
+}
+
+function handleDeleteMessage(ws, data) {
+  if (ws.channel == null) return;
+  const ch = channels[ws.channel];
+  const mid = (data.mid || '').toString();
+  if (!mid) return;
+  const idx = ch.history.findIndex((m) => m.mid === mid);
+  if (idx === -1) return;
+  const msg = ch.history[idx];
+  if (msg.id !== ws.id && ch.ownerId !== ws.id) {
+    return send(ws, { type: 'error', text: 'you can only delete your own messages' });
+  }
+  ch.history.splice(idx, 1);
+  broadcast(ws.channel, { type: 'messageDeleted', mid });
+}
+
 function handleTyping(ws) {
   if (ws.channel == null) return;
   broadcast(ws.channel, { type: 'typing', id: ws.id, name: ws.name }, ws);
@@ -393,6 +429,8 @@ wss.on('connection', (ws) => {
       case 'rename': return handleRename(ws, data);
       case 'typing': return handleTyping(ws);
       case 'invite': return handleInvite(ws, data);
+      case 'claimOwner': return handleClaimOwner(ws, data);
+      case 'deleteMessage': return handleDeleteMessage(ws, data);
       default: return;
     }
   });
