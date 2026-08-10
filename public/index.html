@@ -265,6 +265,7 @@
       <button id="jumpGo">GO</button>
       <div class="status-dot" id="statusDot" title="connection status"></div>
       <button class="lock-btn" id="lockBtn" title="channel privacy">🔓</button>
+      <button class="lock-btn" id="claimOwnerBtn" title="claim ownership with a code">🔑</button>
     </div>
 
     <div class="sub-row">
@@ -349,6 +350,7 @@
   var sendBtn = document.getElementById('sendBtn');
   var statusDot = document.getElementById('statusDot');
   var lockBtn = document.getElementById('lockBtn');
+  var claimOwnerBtn = document.getElementById('claimOwnerBtn');
   var memberCount = document.getElementById('memberCount');
   var freqJump = document.getElementById('freqJump');
   var typingLine = document.getElementById('typingLine');
@@ -734,6 +736,13 @@
       case 'inviteSent':
         addSystemLine(data.delivered ? ('invite sent to ' + data.toName) : ('invite sent to ' + data.toName + ', they will see it when they open the app'));
         break;
+      case 'messageDeleted':
+        var deadDiv = speaker.querySelector('[data-mid="' + data.mid + '"]');
+        if(deadDiv) deadDiv.remove();
+        if(speaker.children.length === 0){
+          speaker.innerHTML = '<div class="empty-static">— static —<br>no transmissions on this channel yet</div>';
+        }
+        break;
     }
   }
 
@@ -770,7 +779,7 @@
     var mid = m.mid || '';
     html += '<div class="reaction-row" id="rx-' + mid + '"></div>';
     html += '<div class="emoji-strip" id="es-' + mid + '">' + EMOJI_SET.map(function(e){ return '<span data-emoji="' + e + '">' + e + '</span>'; }).join('') + '</div>';
-    html += '<div class="msg-actions"><button class="react-toggle">+ react</button><button class="reply-toggle">↩ reply</button></div>';
+    html += '<div class="msg-actions"><button class="react-toggle">+ react</button><button class="reply-toggle">↩ reply</button><button class="delete-toggle">🗑 delete</button></div>';
 
     div.innerHTML = html;
     speaker.appendChild(div);
@@ -790,6 +799,12 @@
       });
       div.querySelector('.reply-toggle').addEventListener('click', function(){
         setReply(mid, m.name, m.text || '');
+      });
+      div.querySelector('.delete-toggle').addEventListener('click', function(){
+        if(!confirm('delete this message?')) return;
+        if(ws && ws.readyState === WebSocket.OPEN){
+          ws.send(JSON.stringify({ type:'deleteMessage', mid: mid }));
+        }
       });
       if(m.reactions) updateReactionUI(mid, m.reactions);
     }
@@ -914,6 +929,14 @@
       if(code && code.trim()){
         ws.send(JSON.stringify({ type:'setPrivate', private:true, code: code.trim() }));
       }
+    }
+  });
+
+  claimOwnerBtn.addEventListener('click', function(){
+    if(!ws || ws.readyState !== WebSocket.OPEN) return;
+    var code = prompt('enter owner code:');
+    if(code && code.trim()){
+      ws.send(JSON.stringify({ type:'claimOwner', code: code.trim() }));
     }
   });
 
