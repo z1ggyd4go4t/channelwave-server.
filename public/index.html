@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0e1013">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>ChannelWave</title>
 <style>
   :root{
@@ -268,6 +271,8 @@
       <input id="nameInput" maxlength="18" placeholder="pick a name">
       <span class="member-count" id="memberCount"></span>
       <button class="icon-btn" id="filterBtn" title="no slur mode">🚫</button>
+      <button class="icon-btn" id="notifyBtn" title="notifications">🔔</button>
+      <button class="icon-btn" id="inviteBtn" title="invite someone">👥</button>
       <button class="icon-btn" id="resetBtn" title="reset channel" style="display:none;">🗑️</button>
     </div>
 
@@ -309,6 +314,23 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="inviteModalBackdrop">
+  <div class="modal">
+    <h3>invite someone to this channel</h3>
+    <input id="inviteModalInput" placeholder="their username" maxlength="18">
+    <button id="inviteModalGo">SEND INVITE</button>
+    <button class="cancel" id="inviteModalCancel">cancel</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="inviteBannerBackdrop">
+  <div class="modal">
+    <h3 id="inviteBannerTitle">invite</h3>
+    <button id="inviteBannerAccept">JOIN CHANNEL</button>
+    <button class="cancel" id="inviteBannerDecline">decline</button>
+  </div>
+</div>
+
 <script>
 (function(){
   var TOTAL_CHANNELS = 100;
@@ -346,6 +368,17 @@
   var codeModalGo = document.getElementById('codeModalGo');
   var codeModalCancel = document.getElementById('codeModalCancel');
 
+  var inviteBtn = document.getElementById('inviteBtn');
+  var inviteModalBackdrop = document.getElementById('inviteModalBackdrop');
+  var inviteModalInput = document.getElementById('inviteModalInput');
+  var inviteModalGo = document.getElementById('inviteModalGo');
+  var inviteModalCancel = document.getElementById('inviteModalCancel');
+  var inviteBannerBackdrop = document.getElementById('inviteBannerBackdrop');
+  var inviteBannerTitle = document.getElementById('inviteBannerTitle');
+  var inviteBannerAccept = document.getElementById('inviteBannerAccept');
+  var inviteBannerDecline = document.getElementById('inviteBannerDecline');
+  var pendingInviteChannel = null;
+
   var EMOJI_SET = ['👍','❤️','😂','😮','🔥'];
   var typingUsers = new Map(); // id -> { name, timeout }
   var dotsHtml = '<span class="typing-dots"><span></span><span></span><span></span></span>';
@@ -372,26 +405,7 @@
     if(savedName) nameInput.value = savedName;
   }catch(e){}
 
-  // ---- notifications ----
-  var notifyEnabled = false;
-  if('Notification' in window && Notification.permission === 'granted'){
-    notifyEnabled = true;
-  }
-  function requestNotifications(){
-    if(!('Notification' in window)) return;
-    if(Notification.permission === 'default'){
-      Notification.requestPermission().then(function(p){ notifyEnabled = (p === 'granted'); });
-    }else if(Notification.permission === 'granted'){
-      notifyEnabled = true;
-    }
-  }
-  function notify(name, text){
-    if(!notifyEnabled) return;
-    if(document.visibilityState === 'visible') return;
-    try{
-      new Notification(name + ' on CH' + String(currentChannel).padStart(2,'0'), { body: text || 'sent a gif' });
-    }catch(e){}
-  }
+  // notifications are handled by the push module further down (works even when the tab/app is closed)
 
   // ---- no slur mode (client-side censor, per device) ----
   // add your own words to this list, kept as placeholders here on purpose
@@ -422,6 +436,115 @@
       var raw = el.getAttribute('data-raw') || '';
       el.innerHTML = escapeHtml(censor(raw));
     });
+  });
+
+  // ---- notifications (PWA push, works even when the site/app is closed) ----
+  var notifyBtn = document.getElementById('notifyBtn');
+  var notifyOn = false;
+  try{ notifyOn = localStorage.getItem('channelwave_notify') === '1'; }catch(e){}
+  var swRegistration = null;
+
+  function getClientId(){
+    var id = null;
+    try{ id = localStorage.getItem('channelwave_client_id'); }catch(e){}
+    if(!id){
+      id = 'c' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      try{ localStorage.setItem('channelwave_client_id', id); }catch(e){}
+    }
+    return id;
+  }
+
+  function urlBase64ToUint8Array(base64String){
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var rawData = atob(base64);
+    var outputArray = new Uint8Array(rawData.length);
+    for(var i=0; i<rawData.length; i++){ outputArray[i] = rawData.charCodeAt(i); }
+    return outputArray;
+  }
+
+  function updateNotifyBtn(){ notifyBtn.classList.toggle('active', notifyOn); }
+  updateNotifyBtn();
+
+  function registerServiceWorker(){
+    if(!('serviceWorker' in navigator)) return Promise.resolve(null);
+    return navigator.serviceWorker.register('/sw.js').then(function(reg){
+      swRegistration = reg;
+      return reg;
+    }).catch(function(){ return null; });
+  }
+
+  function subscribeToPush(){
+    if(!swRegistration || !('PushManager' in window)) return;
+    fetch('/vapidPublicKey').then(function(r){ return r.text(); }).then(function(vapidKey){
+      return swRegistration.pushManager.getSubscription().then(function(existing){
+        if(existing) return existing;
+        return swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey)
+        });
+      });
+    }).then(function(sub){
+      if(!sub) return;
+      fetch('/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), clientId: getClientId(), channel: currentChannel, name: getName() })
+      });
+    }).catch(function(err){ addSystemLine('could not enable notifications: ' + err.message); });
+  }
+
+  function resubscribePush(){
+    if(!swRegistration) return;
+    swRegistration.pushManager.getSubscription().then(function(sub){
+      if(!sub) return;
+      fetch('/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON(), clientId: getClientId(), channel: currentChannel, name: getName() })
+      });
+    });
+  }
+
+  function unsubscribeFromPush(){
+    if(!swRegistration) return;
+    swRegistration.pushManager.getSubscription().then(function(sub){
+      if(!sub) return;
+      fetch('/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: sub.endpoint })
+      });
+      sub.unsubscribe();
+    });
+  }
+
+  notifyBtn.addEventListener('click', function(){
+    if(notifyOn){
+      notifyOn = false;
+      try{ localStorage.setItem('channelwave_notify', '0'); }catch(e){}
+      updateNotifyBtn();
+      unsubscribeFromPush();
+      return;
+    }
+    if(!('Notification' in window)){
+      addSystemLine('notifications are not supported in this browser');
+      return;
+    }
+    Notification.requestPermission().then(function(perm){
+      if(perm !== 'granted'){
+        addSystemLine('notification permission was not granted');
+        return;
+      }
+      notifyOn = true;
+      try{ localStorage.setItem('channelwave_notify', '1'); }catch(e){}
+      updateNotifyBtn();
+      registerServiceWorker().then(function(){ subscribeToPush(); });
+    });
+  });
+
+  registerServiceWorker().then(function(){
+    if(notifyOn) subscribeToPush();
   });
 
   // ---- gif shelf (per device, stored locally in the browser) ----
@@ -563,7 +686,6 @@
 
       case 'message':
         appendMessage(data);
-        if(data.id !== myId) notify(data.name, data.text);
         typingUsers.delete(data.id);
         renderTypingLine();
         break;
@@ -603,6 +725,14 @@
       case 'channelReset':
         clearReply();
         speaker.innerHTML = '<div class="empty-static">— static —<br>no transmissions on this channel yet</div>';
+        break;
+      case 'inviteReceived':
+        pendingInviteChannel = data.channel;
+        inviteBannerTitle.textContent = data.fromName + ' invited you to channel ' + String(data.channel).padStart(2,'0');
+        inviteBannerBackdrop.classList.add('show');
+        break;
+      case 'inviteSent':
+        addSystemLine(data.delivered ? ('invite sent to ' + data.toName) : ('invite sent to ' + data.toName + ', they will see it when they open the app'));
         break;
     }
   }
@@ -697,7 +827,7 @@
   function joinChannel(ch, code){
     if(!ws || ws.readyState !== WebSocket.OPEN) return;
     speaker.innerHTML = '<div class="empty-static">tuning in...</div>';
-    ws.send(JSON.stringify({ type:'join', channel: ch, name: getName(), code: code || null }));
+    ws.send(JSON.stringify({ type:'join', channel: ch, name: getName(), code: code || null, clientId: getClientId() }));
   }
 
   function switchChannel(ch){
@@ -706,6 +836,7 @@
     updateFreqReadout();
     clearTypingUsers();
     joinChannel(ch);
+    if(notifyOn) resubscribePush();
   }
 
   function openCodeModal(ch){
@@ -726,6 +857,36 @@
     speaker.innerHTML = '<div class="empty-static">enter a code to tune in</div>';
   });
   codeModalInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') codeModalGo.click(); });
+
+  // ---- invites ----
+  inviteBtn.addEventListener('click', function(){
+    inviteModalInput.value = '';
+    inviteModalBackdrop.classList.add('show');
+    inviteModalInput.focus();
+  });
+  inviteModalCancel.addEventListener('click', function(){
+    inviteModalBackdrop.classList.remove('show');
+  });
+  inviteModalGo.addEventListener('click', function(){
+    var toName = inviteModalInput.value.trim();
+    if(!toName || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'invite', toName: toName }));
+    inviteModalBackdrop.classList.remove('show');
+  });
+  inviteModalInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') inviteModalGo.click(); });
+
+  inviteBannerAccept.addEventListener('click', function(){
+    inviteBannerBackdrop.classList.remove('show');
+    if(pendingInviteChannel != null){
+      freqJump.value = pendingInviteChannel;
+      switchChannel(pendingInviteChannel);
+      pendingInviteChannel = null;
+    }
+  });
+  inviteBannerDecline.addEventListener('click', function(){
+    inviteBannerBackdrop.classList.remove('show');
+    pendingInviteChannel = null;
+  });
 
   document.getElementById('tuneUp').addEventListener('click', function(){ switchChannel(currentChannel + 1); });
   document.getElementById('tuneDown').addEventListener('click', function(){ switchChannel(currentChannel - 1); });
@@ -771,7 +932,6 @@
       }
     }, 500);
   });
-  nameInput.addEventListener('focus', requestNotifications);
 
   // if a name was already saved on this device, enable the mic right away
   if(nameInput.value.trim().length > 0){
