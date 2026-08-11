@@ -272,6 +272,21 @@
     background:linear-gradient(180deg,var(--amber),#2a5570); color:#0e1116; font-weight:bold;
   }
   .modal .cancel{ background:none; border:1px solid #3a4450; color:var(--paper); margin-top:6px; }
+
+  .ban-modal{ width:300px; }
+  .ban-actions{ display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  .ban-actions button{
+    padding:8px; border-radius:8px; border:none; cursor:pointer;
+    background:linear-gradient(180deg,var(--amber),#2a5570); color:#0e1013; font-weight:bold; font-size:12px;
+  }
+  #unbanGo{ background:linear-gradient(180deg,#7fbf9f,#2a5570); }
+  .ban-list{
+    text-align:left; font-size:11.5px; color:var(--paper-dim);
+    max-height:110px; overflow-y:auto; margin-bottom:8px;
+    border-top:1px solid #2a3038; padding-top:6px;
+  }
+  .ban-list div{ padding:2px 0; }
+  .ban-list .empty{ font-style:italic; }
 </style>
 </head>
 <body>
@@ -302,6 +317,7 @@
       <button class="icon-btn" id="notifyBtn" title="notifications">🔔</button>
       <button class="icon-btn" id="inviteBtn" title="invite someone">👥</button>
       <button class="icon-btn" id="resetBtn" title="reset channel" style="display:none;">🗑️</button>
+      <button class="icon-btn" id="banBtn" title="ban management" style="display:none;">🚷</button>
     </div>
 
     <div class="speaker" id="speaker">
@@ -361,6 +377,20 @@
   </div>
 </div>
 
+<div class="modal-backdrop" id="banModalBackdrop">
+  <div class="modal ban-modal">
+    <h3>ban management</h3>
+    <input id="banModalInput" placeholder="username" maxlength="18">
+    <div class="ban-actions">
+      <button id="banUserGo">ban user (kick)</button>
+      <button id="banNameGo">ban name</button>
+      <button id="unbanGo">unban</button>
+    </div>
+    <div class="ban-list" id="banListArea"></div>
+    <button class="cancel" id="banModalCancel">close</button>
+  </div>
+</div>
+
 <script>
 (function(){
   var TOTAL_CHANNELS = 100;
@@ -385,6 +415,14 @@
   var typingLine = document.getElementById('typingLine');
   var filterBtn = document.getElementById('filterBtn');
   var resetBtn = document.getElementById('resetBtn');
+  var banBtn = document.getElementById('banBtn');
+  var banModalBackdrop = document.getElementById('banModalBackdrop');
+  var banModalInput = document.getElementById('banModalInput');
+  var banUserGo = document.getElementById('banUserGo');
+  var banNameGo = document.getElementById('banNameGo');
+  var unbanGo = document.getElementById('unbanGo');
+  var banListArea = document.getElementById('banListArea');
+  var banModalCancel = document.getElementById('banModalCancel');
   var gifBtn = document.getElementById('gifBtn');
   var gifPanel = document.getElementById('gifPanel');
   var gifGrid = document.getElementById('gifGrid');
@@ -709,8 +747,39 @@
       ws.send(JSON.stringify({ type:'resetChannel' }));
     }
   });
+
+  banBtn.addEventListener('click', function(){
+    banModalInput.value = '';
+    banModalBackdrop.classList.add('show');
+    if(ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type:'listBans' }));
+  });
+  banModalCancel.addEventListener('click', function(){ banModalBackdrop.classList.remove('show'); });
+  banUserGo.addEventListener('click', function(){
+    var name = banModalInput.value.trim();
+    if(!name || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'banUser', name: name }));
+  });
+  banNameGo.addEventListener('click', function(){
+    var name = banModalInput.value.trim();
+    if(!name || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'banName', name: name }));
+  });
+  unbanGo.addEventListener('click', function(){
+    var name = banModalInput.value.trim();
+    if(!name || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'unban', name: name }));
+  });
+  function renderBanList(names){
+    if(!names || names.length === 0){
+      banListArea.innerHTML = '<div class="empty">no one is banned here</div>';
+      return;
+    }
+    banListArea.innerHTML = names.map(function(n){ return '<div>🚫 ' + escapeHtml(n) + '</div>'; }).join('');
+  }
+
   function updateResetBtnVisibility(){
     resetBtn.style.display = (isOwner && isPrivate) ? 'inline-block' : 'none';
+    banBtn.style.display = isOwner ? 'inline-block' : 'none';
   }
 
   // ---- typing indicator ----
@@ -837,6 +906,21 @@
         break;
       case 'members':
         channelMembers = data.members || [];
+        break;
+      case 'banned':
+        speaker.innerHTML = '<div class="empty-static">— static —<br>you were banned from this channel</div>';
+        addSystemLine('you were banned from this channel');
+        break;
+      case 'banResult':
+        addSystemLine(data.kicked ? (data.name + ' was banned (' + data.mode + ')') : ('ban recorded for ' + data.name));
+        if(ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type:'listBans' }));
+        break;
+      case 'unbanResult':
+        addSystemLine(data.name + ' was unbanned');
+        if(ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type:'listBans' }));
+        break;
+      case 'banList':
+        renderBanList(data.names || []);
         break;
     }
   }
