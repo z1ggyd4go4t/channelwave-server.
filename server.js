@@ -80,6 +80,19 @@ function broadcast(chNum, obj, exceptWs) {
   }
 }
 
+const DEFAULT_NAME_COLOR = '#5ec8ff';
+
+function isValidColor(c) {
+  return typeof c === 'string' && /^#[0-9a-fA-F]{6}$/.test(c);
+}
+
+function broadcastMembers(chNum) {
+  const ch = channels[chNum];
+  if (!ch) return;
+  const members = ch.order.map((w) => ({ name: w.name, color: w.color || DEFAULT_NAME_COLOR }));
+  broadcast(chNum, { type: 'members', members });
+}
+
 function pushHistory(ch, msg) {
   ch.history.push(msg);
   if (ch.history.length > MAX_HISTORY) ch.history.shift();
@@ -109,7 +122,9 @@ function leaveChannel(ws) {
   }
 
   broadcast(ws.channel, { type: 'presence', memberCount: ch.members.size });
+  const leftChannel = ws.channel;
   ws.channel = null;
+  broadcastMembers(leftChannel);
 }
 
 function handleJoin(ws, data) {
@@ -136,6 +151,7 @@ function handleJoin(ws, data) {
 
   ws.name = (data.name || 'unknown').toString().slice(0, 18);
   ws.clientId = (data.clientId || '').toString().slice(0, 64) || null;
+  ws.color = isValidColor(data.color) ? data.color : (ws.color || DEFAULT_NAME_COLOR);
   ws.channel = chNum;
   ch.members.add(ws);
   ch.order.push(ws);
@@ -156,11 +172,13 @@ function handleJoin(ws, data) {
     becameOwner,
     private: ch.private,
     history: ch.history,
-    memberCount: ch.members.size
+    memberCount: ch.members.size,
+    color: ws.color
   });
 
   broadcast(chNum, { type: 'system', text: `${ws.name} joined the channel`, t: Date.now() }, ws);
   broadcast(chNum, { type: 'presence', memberCount: ch.members.size });
+  broadcastMembers(chNum);
   deliverPendingInvites(ws);
 }
 
@@ -227,6 +245,7 @@ function handleMessage(ws, data) {
     mid: 'm' + (nextMsgId++),
     id: ws.id,
     name: ws.name,
+    color: ws.color || DEFAULT_NAME_COLOR,
     text,
     image,
     replyTo: buildReplySnippet(data),
@@ -301,8 +320,15 @@ function handleRename(ws, data) {
   ws.name = newName;
   if (ws.channel != null) {
     broadcast(ws.channel, { type: 'system', text: `${oldName} is now known as ${newName}`, t: Date.now() }, ws);
+    broadcastMembers(ws.channel);
   }
   deliverPendingInvites(ws);
+}
+
+function handleSetColor(ws, data) {
+  if (!isValidColor(data.color)) return;
+  ws.color = data.color;
+  if (ws.channel != null) broadcastMembers(ws.channel);
 }
 
 function handleClaimOwner(ws, data) {
@@ -414,6 +440,7 @@ wss.on('connection', (ws) => {
   ws.channel = null;
   ws.name = 'unknown';
   ws.clientId = null;
+  ws.color = DEFAULT_NAME_COLOR;
 
   send(ws, { type: 'hello', id: ws.id });
 
@@ -427,6 +454,7 @@ wss.on('connection', (ws) => {
       case 'setPrivate': return handleSetPrivate(ws, data);
       case 'resetChannel': return handleResetChannel(ws);
       case 'rename': return handleRename(ws, data);
+      case 'setColor': return handleSetColor(ws, data);
       case 'typing': return handleTyping(ws);
       case 'invite': return handleInvite(ws, data);
       case 'claimOwner': return handleClaimOwner(ws, data);
