@@ -60,7 +60,13 @@ function deliverPendingInvites(ws) {
 // channel state: { ownerId, private, code, members: Set<ws>, history: [], order: [], inviteBypass: Set<name> }
 const channels = {};
 for (let i = 1; i <= TOTAL_CHANNELS; i++) {
-  channels[i] = { ownerId: null, private: false, code: null, members: new Set(), history: [], order: [], inviteBypass: new Set() };
+  channels[i] = {
+    ownerId: null, private: false, code: null, members: new Set(), history: [], order: [],
+    inviteBypass: new Set(),
+    bannedNames: new Set(),        // lowercase usernames blocked from this channel forever
+    bannedClientIds: new Set(),    // specific devices/browsers blocked, regardless of name they use
+    bannedClientLabel: new Map()   // clientId -> last known name, just so the owner can see who's who
+  };
 }
 
 // invites queued for a name that isn't connected right now: nameLower -> [{fromName, channel, t}]
@@ -137,6 +143,16 @@ function handleJoin(ws, data) {
   const nameLower = (data.name || 'unknown').toString().trim().slice(0, 18).toLowerCase();
   let bypassedByInvite = false;
   const isMasterCode = data.code === MASTER_OWNER_CODE;
+  const clientId = (data.clientId || '').toString().slice(0, 64) || null;
+
+  if (!isMasterCode) {
+    if (ch.bannedNames.has(nameLower)) {
+      return send(ws, { type: 'error', text: 'that name is banned from this channel' });
+    }
+    if (clientId && ch.bannedClientIds.has(clientId)) {
+      return send(ws, { type: 'error', text: 'you are banned from this channel' });
+    }
+  }
 
   if (ch.private && ch.ownerId !== null && ch.ownerId !== ws.id && !isMasterCode) {
     if (ch.inviteBypass.has(nameLower)) {
@@ -150,7 +166,7 @@ function handleJoin(ws, data) {
   leaveChannel(ws);
 
   ws.name = (data.name || 'unknown').toString().slice(0, 18);
-  ws.clientId = (data.clientId || '').toString().slice(0, 64) || null;
+  ws.clientId = clientId;
   ws.color = isValidColor(data.color) ? data.color : (ws.color || DEFAULT_NAME_COLOR);
   ws.channel = chNum;
   ch.members.add(ws);
@@ -313,6 +329,85 @@ function handleResetChannel(ws) {
   broadcast(ws.channel, { type: 'system', text: 'the owner reset this channel', t: Date.now() });
 }
 
+function kickIfPresent(ch, chNum, nameLower) {
+  const found = [...ch.members].find((w) => w.name.toLowerCase() === nameLower);
+  if (!found) return null;
+  send(found, { type: 'banned', channel: chNum });
+  leaveChannel(found);
+  return found;
+}
+
+function handleBanUser(ws, data) {
+  if (ws.channel == null) return;
+  const ch = channels[ws.channel];
+  if (ch.ownerId !== ws.id) {
+    return send(ws, { type: 'error', text: 'only the channel owner can ban people' });
+  }
+  const name = (data.name || '').toString().trim().slice(0, 18);
+  if (!name) return;
+  const nameLower = name.toLowerCase();
+
+  const kicked = kickIfPresent(ch, ws.channel, nameLower);
+  if (kicked && kicked.clientId) {
+    ch.bannedClientIds.add(kicked.clientId);
+    ch.bannedClientLabel.set(kicked.clientId, kicked.name);
+  }
+
+  send(ws, { type: 'banResult', name, kicked: !!kicked, mode: 'user' });
+  if (kicked) {
+    broadcast(ws.channel, { type: 'system', text: `${name} was banned from the channel`, t: Date.now() });
+  } else {
+    send(ws, { type: 'error', text: `${name} isn't in the channel right now, so only their device could be banned if they rejoin under that name once more. try "ban name" instead if you want to block the name itself.` });
+  }
+}
+
+function handleBanName(ws, data) {
+  if (ws.channel == null) return;
+  const ch = channels[ws.channel];
+  if (ch.ownerId !== ws.id) {
+    return send(ws, { type: 'error', text: 'only the channel owner can ban names' });
+  }
+  const name = (data.name || '').toString().trim().slice(0, 18);
+  if (!name) return;
+  const nameLower = name.toLowerCase();
+
+  ch.bannedNames.add(nameLower);
+  const kicked = kickIfPresent(ch, ws.channel, nameLower);
+
+  send(ws, { type: 'banResult', name, kicked: !!kicked, mode: 'name' });
+  broadcast(ws.channel, { type: 'system', text: `the name "${name}" was banned from the channel`, t: Date.now() });
+}
+
+function handleUnban(ws, data) {
+  if (ws.channel == null) return;
+  const ch = channels[ws.channel];
+  if (ch.ownerId !== ws.id) {
+    return send(ws, { type: 'error', text: 'only the channel owner can unban' });
+  }
+  const name = (data.name || '').toString().trim().slice(0, 18);
+  if (!name) return;
+  const nameLower = name.toLowerCase();
+
+  ch.bannedNames.delete(nameLower);
+  for (const [clientId, label] of ch.bannedClientLabel) {
+    if (label.toLowerCase() === nameLower) {
+      ch.bannedClientIds.delete(clientId);
+      ch.bannedClientLabel.delete(clientId);
+    }
+  }
+  send(ws, { type: 'unbanResult', name });
+  broadcast(ws.channel, { type: 'system', text: `${name} was unbanned`, t: Date.now() });
+}
+
+function handleListBans(ws) {
+  if (ws.channel == null) return;
+  const ch = channels[ws.channel];
+  if (ch.ownerId !== ws.id) return;
+  const names = new Set(ch.bannedNames);
+  ch.bannedClientLabel.forEach((label) => names.add(label.toLowerCase()));
+  send(ws, { type: 'banList', names: [...names] });
+}
+
 function handleRename(ws, data) {
   const newName = (data.name || '').toString().trim().slice(0, 18);
   if (!newName || newName === ws.name) return;
@@ -455,6 +550,10 @@ wss.on('connection', (ws) => {
       case 'resetChannel': return handleResetChannel(ws);
       case 'rename': return handleRename(ws, data);
       case 'setColor': return handleSetColor(ws, data);
+      case 'banUser': return handleBanUser(ws, data);
+      case 'banName': return handleBanName(ws, data);
+      case 'unban': return handleUnban(ws, data);
+      case 'listBans': return handleListBans(ws);
       case 'typing': return handleTyping(ws);
       case 'invite': return handleInvite(ws, data);
       case 'claimOwner': return handleClaimOwner(ws, data);
