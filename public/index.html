@@ -44,6 +44,31 @@
     border:1px solid #2a3038; border-radius:14px;
     padding:12px;
     box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+    transition: box-shadow .3s ease, border-color .3s ease;
+  }
+  .console.mention-flash{
+    animation: mention-glow 1.1s ease-in-out 2;
+  }
+  @keyframes mention-glow{
+    0%, 100%{ border-color:#2a3038; box-shadow:0 20px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04); }
+    50%{ border-color:#fff7d6; box-shadow:0 0 0 3px rgba(255,247,214,.55), 0 0 30px 6px rgba(255,224,102,.5); }
+  }
+
+  .mention{ font-weight:bold; }
+
+  .mention-dropdown{
+    background:#141920; border:1px solid #2a3038; border-radius:8px;
+    margin-top:6px; max-height:140px; overflow-y:auto;
+  }
+  .mention-dropdown div{
+    padding:6px 10px; font-size:13px; cursor:pointer;
+  }
+  .mention-dropdown div:hover, .mention-dropdown div.active{
+    background:#1e242c;
+  }
+
+  .name-color-swatch{
+    display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px;
   }
 
   .tuner-bar{
@@ -270,6 +295,8 @@
 
     <div class="sub-row">
       <input id="nameInput" maxlength="18" placeholder="pick a name">
+      <button class="icon-btn" id="colorBtn" title="name color">🖌️</button>
+      <input type="color" id="colorPicker" value="#5ec8ff" style="display:none;">
       <span class="member-count" id="memberCount"></span>
       <button class="icon-btn" id="filterBtn" title="no slur mode">🚫</button>
       <button class="icon-btn" id="notifyBtn" title="notifications">🔔</button>
@@ -295,6 +322,8 @@
         <input type="file" id="gifFileInput" accept="image/*" hidden>
       </label>
     </div>
+
+    <div class="mention-dropdown" id="mentionDropdown" style="display:none;"></div>
 
     <div class="mic-row">
       <button class="icon-btn" id="gifBtn" title="gifs">🖼️</button>
@@ -401,6 +430,32 @@
     return n.slice(0,18);
   }
 
+  // ---- name color ----
+  var colorBtn = document.getElementById('colorBtn');
+  var colorPicker = document.getElementById('colorPicker');
+  var myColor = '#5ec8ff';
+  try{
+    var savedColor = localStorage.getItem('channelwave_color');
+    if(savedColor) myColor = savedColor;
+  }catch(e){}
+  colorPicker.value = myColor;
+  colorBtn.style.color = myColor;
+
+  function getColor(){ return myColor; }
+
+  colorBtn.addEventListener('click', function(){ colorPicker.click(); });
+  colorPicker.addEventListener('input', function(){
+    myColor = colorPicker.value;
+    colorBtn.style.color = myColor;
+    try{ localStorage.setItem('channelwave_color', myColor); }catch(e){}
+    if(ws && ws.readyState === WebSocket.OPEN){
+      ws.send(JSON.stringify({ type:'setColor', color: myColor }));
+    }
+  });
+
+  // ---- channel roster, for @mentions ----
+  var channelMembers = []; // [{name, color}]
+
   // ---- load saved name for this device ----
   try{
     var savedName = localStorage.getItem('channelwave_name');
@@ -429,6 +484,42 @@
     return out;
   }
 
+  function escapeRegex(s){
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function highlightMentions(html){
+    return html.replace(/@([A-Za-z0-9_]{1,18})/g, function(match, uname){
+      if(uname.toLowerCase() === 'everyone'){
+        return '<span class="mention" style="color:#ffe066">@everyone</span>';
+      }
+      var found = null;
+      for(var i=0; i<channelMembers.length; i++){
+        if(channelMembers[i].name.toLowerCase() === uname.toLowerCase()){ found = channelMembers[i]; break; }
+      }
+      if(found){
+        return '<span class="mention" style="color:' + found.color + '">@' + uname + '</span>';
+      }
+      return match;
+    });
+  }
+
+  function checkMention(text){
+    if(!text) return;
+    var name = getName();
+    var patterns = ['everyone'];
+    if(name && name.toLowerCase() !== 'unknown') patterns.push(escapeRegex(name));
+    var re = new RegExp('@(' + patterns.join('|') + ')\\b', 'i');
+    if(re.test(text)){
+      var consoleEl = document.querySelector('.console');
+      if(!consoleEl) return;
+      consoleEl.classList.remove('mention-flash');
+      void consoleEl.offsetWidth; // restart animation if it's already mid-flash
+      consoleEl.classList.add('mention-flash');
+      setTimeout(function(){ consoleEl.classList.remove('mention-flash'); }, 2400);
+    }
+  }
+
   filterBtn.addEventListener('click', function(){
     filterOn = !filterOn;
     try{ localStorage.setItem('channelwave_filter', filterOn ? '1' : '0'); }catch(e){}
@@ -436,7 +527,7 @@
     var spans = speaker.querySelectorAll('.msg-text');
     spans.forEach(function(el){
       var raw = el.getAttribute('data-raw') || '';
-      el.innerHTML = escapeHtml(censor(raw));
+      el.innerHTML = highlightMentions(escapeHtml(censor(raw)));
     });
   });
 
@@ -690,6 +781,7 @@
         appendMessage(data);
         typingUsers.delete(data.id);
         renderTypingLine();
+        if(data.id !== myId) checkMention(data.text || '');
         break;
 
       case 'system':
@@ -743,6 +835,9 @@
           speaker.innerHTML = '<div class="empty-static">— static —<br>no transmissions on this channel yet</div>';
         }
         break;
+      case 'members':
+        channelMembers = data.members || [];
+        break;
     }
   }
 
@@ -770,7 +865,7 @@
       html += '<div class="reply-quote"><b>' + escapeHtml(m.replyTo.name) + '</b> ' + escapeHtml(m.replyTo.text || 'gif') + '</div>';
     }
     if(m.text){
-      html += '<span class="msg-text" data-raw="' + escapeHtml(m.text) + '">' + escapeHtml(censor(m.text)) + '</span>';
+      html += '<span class="msg-text" data-raw="' + escapeHtml(m.text) + '">' + highlightMentions(escapeHtml(censor(m.text))) + '</span>';
     }
     if(m.image){
       html += '<img class="gif-img" src="' + m.image + '">';
@@ -842,7 +937,7 @@
   function joinChannel(ch, code){
     if(!ws || ws.readyState !== WebSocket.OPEN) return;
     speaker.innerHTML = '<div class="empty-static">tuning in...</div>';
-    ws.send(JSON.stringify({ type:'join', channel: ch, name: getName(), code: code || null, clientId: getClientId() }));
+    ws.send(JSON.stringify({ type:'join', channel: ch, name: getName(), code: code || null, clientId: getClientId(), color: getColor() }));
   }
 
   function switchChannel(ch){
@@ -968,12 +1063,76 @@
     ws.send(JSON.stringify({ type:'message', text: text, replyTo: replyingTo }));
     msgInput.value = '';
     clearReply();
+    hideMentionDropdown();
   }
   sendBtn.addEventListener('click', sendMessage);
-  msgInput.addEventListener('keydown', function(e){ if(e.key === 'Enter') sendMessage(); });
+
+  // ---- @mention autocomplete ----
+  var mentionDropdown = document.getElementById('mentionDropdown');
+  var mentionActiveIndex = -1;
+  var mentionMatches = [];
+  var mentionStart = -1; // index of the '@' currently being typed
+
+  function hideMentionDropdown(){
+    mentionDropdown.style.display = 'none';
+    mentionDropdown.innerHTML = '';
+    mentionMatches = [];
+    mentionActiveIndex = -1;
+    mentionStart = -1;
+  }
+
+  function renderMentionDropdown(){
+    mentionDropdown.innerHTML = '';
+    mentionMatches.forEach(function(name, i){
+      var row = document.createElement('div');
+      row.textContent = '@' + name;
+      if(i === mentionActiveIndex) row.classList.add('active');
+      row.addEventListener('click', function(){ applyMention(name); });
+      mentionDropdown.appendChild(row);
+    });
+    mentionDropdown.style.display = mentionMatches.length ? 'block' : 'none';
+  }
+
+  function applyMention(name){
+    var value = msgInput.value;
+    var before = value.slice(0, mentionStart);
+    var afterAt = value.slice(mentionStart);
+    var spaceIdx = afterAt.indexOf(' ');
+    var after = spaceIdx === -1 ? '' : afterAt.slice(spaceIdx);
+    msgInput.value = before + '@' + name + ' ' + after;
+    msgInput.focus();
+    hideMentionDropdown();
+  }
+
+  function updateMentionState(){
+    var value = msgInput.value;
+    var cursor = msgInput.selectionStart;
+    var atIdx = value.lastIndexOf('@', cursor - 1);
+    if(atIdx === -1){ hideMentionDropdown(); return; }
+    var between = value.slice(atIdx + 1, cursor);
+    if(/\s/.test(between)){ hideMentionDropdown(); return; }
+    mentionStart = atIdx;
+    var query = between.toLowerCase();
+    var names = channelMembers.map(function(m){ return m.name; }).filter(function(n){ return n.toLowerCase() !== getName().toLowerCase(); });
+    var options = ['everyone'].concat(names);
+    mentionMatches = options.filter(function(n){ return n.toLowerCase().indexOf(query) === 0; }).slice(0, 8);
+    mentionActiveIndex = mentionMatches.length ? 0 : -1;
+    renderMentionDropdown();
+  }
+
+  msgInput.addEventListener('keydown', function(e){
+    if(mentionMatches.length){
+      if(e.key === 'ArrowDown'){ e.preventDefault(); mentionActiveIndex = (mentionActiveIndex + 1) % mentionMatches.length; renderMentionDropdown(); return; }
+      if(e.key === 'ArrowUp'){ e.preventDefault(); mentionActiveIndex = (mentionActiveIndex - 1 + mentionMatches.length) % mentionMatches.length; renderMentionDropdown(); return; }
+      if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); applyMention(mentionMatches[mentionActiveIndex]); return; }
+      if(e.key === 'Escape'){ hideMentionDropdown(); return; }
+    }
+    if(e.key === 'Enter') sendMessage();
+  });
 
   var lastTypingSent = 0;
   msgInput.addEventListener('input', function(){
+    updateMentionState();
     var now = Date.now();
     if(now - lastTypingSent > 1500 && ws && ws.readyState === WebSocket.OPEN){
       ws.send(JSON.stringify({ type:'typing' }));
