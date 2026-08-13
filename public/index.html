@@ -67,6 +67,18 @@
     background:#1e242c;
   }
 
+  .attach-preview{
+    display:flex; align-items:center; gap:8px; background:#141920;
+    border:1px solid #2a3038; border-radius:8px; padding:6px; margin-top:6px;
+  }
+  .attach-preview img{
+    max-height:70px; max-width:120px; border-radius:6px; object-fit:cover;
+  }
+  .attach-preview button{
+    margin-left:auto; background:none; border:1px solid #3a4450; color:var(--paper);
+    border-radius:50%; width:24px; height:24px; cursor:pointer; font-size:12px;
+  }
+
   .name-color-swatch{
     display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px;
   }
@@ -225,8 +237,17 @@
 
   .gif-panel{
     background:#0b0d10; border:1px solid #2a3038; border-radius:10px;
-    padding:8px; margin-top:6px; max-height:160px; overflow-y:auto;
+    padding:8px; margin-top:6px; max-height:220px; overflow-y:auto;
   }
+  .gif-tabs{
+    display:flex; gap:4px; overflow-x:auto; margin-bottom:8px; padding-bottom:4px;
+    border-bottom:1px solid #2a3038;
+  }
+  .gif-tab{
+    flex-shrink:0; background:none; border:1px solid #2a3038; color:var(--paper-dim);
+    font-size:10.5px; padding:5px 8px; border-radius:6px; cursor:pointer; white-space:nowrap;
+  }
+  .gif-tab.active{ border-color:var(--amber); color:var(--amber); }
   .gif-grid{
     display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:8px;
   }
@@ -234,11 +255,31 @@
     width:100%; height:52px; object-fit:cover; border-radius:6px;
     cursor:pointer; border:1px solid #2a3038;
   }
+  .gif-grid .emoji-cell{
+    width:100%; height:52px; display:flex; align-items:center; justify-content:center;
+    font-size:22px; border-radius:6px; cursor:pointer; border:1px solid #2a3038; background:#141920;
+  }
+  .gif-grid .emoji-cell:hover{ border-color:var(--amber); }
   .gif-empty{ font-size:11px; color:var(--paper-dim); grid-column:1/-1; text-align:center; padding:8px 0; }
   .gif-add{
     display:block; text-align:center; font-size:11px; color:var(--brass);
     border:1px dashed #3a4450; border-radius:8px; padding:8px; cursor:pointer;
   }
+
+  #zoomBackdrop{ z-index:20; }
+  .zoom-modal{ position:relative; max-width:90vw; max-height:85vh; }
+  .zoom-modal img{
+    max-width:90vw; max-height:85vh; border-radius:10px; display:block;
+    box-shadow:0 20px 60px rgba(0,0,0,.7);
+  }
+  .zoom-x, .zoom-star{
+    position:absolute; top:-14px; width:32px; height:32px; border-radius:50%;
+    border:1px solid #3a4450; background:#141920; color:var(--paper);
+    cursor:pointer; font-size:15px; display:flex; align-items:center; justify-content:center;
+  }
+  .zoom-x{ left:-14px; }
+  .zoom-star{ right:-14px; color:var(--brass); }
+  .zoom-star.faved{ color:#ffe066; border-color:#ffe066; }
 
   .mic-row{ display:flex; gap:8px; margin-top:4px; }
   .mic-row input{
@@ -332,14 +373,26 @@
     <div class="typing-line" id="typingLine"></div>
 
     <div class="gif-panel" id="gifPanel" style="display:none;">
+      <div class="gif-tabs" id="gifTabs">
+        <button class="gif-tab active" data-tab="favorites">⭐ Favorites</button>
+        <button class="gif-tab" data-tab="used">🕓 Used</button>
+        <button class="gif-tab" data-tab="emojis">😀 Emojis</button>
+        <button class="gif-tab" data-tab="created">🎨 Created</button>
+        <button class="gif-tab" data-tab="channel">📺 In This Channel</button>
+      </div>
       <div class="gif-grid" id="gifGrid"></div>
-      <label class="gif-add">
+      <label class="gif-add" id="gifAddLabel" style="display:none;">
         + add a gif
         <input type="file" id="gifFileInput" accept="image/*" hidden>
       </label>
     </div>
 
     <div class="mention-dropdown" id="mentionDropdown" style="display:none;"></div>
+
+    <div class="attach-preview" id="attachPreview" style="display:none;">
+      <img id="attachPreviewImg" src="">
+      <button id="attachPreviewRemove" title="remove">✕</button>
+    </div>
 
     <div class="mic-row">
       <button class="icon-btn" id="gifBtn" title="gifs">🖼️</button>
@@ -388,6 +441,14 @@
     </div>
     <div class="ban-list" id="banListArea"></div>
     <button class="cancel" id="banModalCancel">close</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="zoomBackdrop">
+  <div class="zoom-modal">
+    <button id="zoomClose" class="zoom-x" title="close">✕</button>
+    <button id="zoomFav" class="zoom-star" title="favorite">☆</button>
+    <img id="zoomImg" src="" alt="sticker">
   </div>
 </div>
 
@@ -678,21 +739,70 @@
     if(notifyOn) subscribeToPush();
   });
 
-  // ---- gif shelf (per device, stored locally in the browser) ----
-  function loadGifs(){
-    try{ return JSON.parse(localStorage.getItem('channelwave_gifs') || '[]'); }catch(e){ return []; }
+  // ---- sticker/gif shelf (per device, stored locally in the browser) ----
+  var gifTabs = document.getElementById('gifTabs');
+  var gifAddLabel = document.getElementById('gifAddLabel');
+  var currentGifTab = 'favorites';
+  var channelImages = []; // in-memory only: images seen in this channel this session, most recent first
+
+  function loadList(key){
+    try{ return JSON.parse(localStorage.getItem(key) || '[]'); }catch(e){ return []; }
   }
-  function saveGifs(list){
-    try{ localStorage.setItem('channelwave_gifs', JSON.stringify(list)); }catch(e){}
+  function saveList(key, list){
+    try{ localStorage.setItem(key, JSON.stringify(list)); }catch(e){}
   }
+  function loadCreated(){ return loadList('channelwave_gifs'); }
+  function loadFavorites(){ return loadList('channelwave_favorites'); }
+  function loadUsed(){ return loadList('channelwave_used'); }
+
+  function rememberUsed(dataUrl){
+    var used = loadUsed().filter(function(u){ return u !== dataUrl; });
+    used.unshift(dataUrl);
+    if(used.length > 30) used = used.slice(0, 30);
+    saveList('channelwave_used', used);
+  }
+
+  function rememberChannelImage(dataUrl){
+    if(!dataUrl) return;
+    channelImages = channelImages.filter(function(u){ return u !== dataUrl; });
+    channelImages.unshift(dataUrl);
+    if(channelImages.length > 40) channelImages = channelImages.slice(0, 40);
+  }
+
+  var EMOJI_QUICKSET = ['😀','😂','😍','😎','🥳','😭','😡','👍','👎','🔥','💯','🎉','❤️','💔','🙏','👀','🤡','💀','😱','🤔'];
+
   function renderGifGrid(){
-    var gifs = loadGifs();
-    if(gifs.length === 0){
-      gifGrid.innerHTML = '<div class="gif-empty">no gifs saved yet</div>';
+    gifGrid.innerHTML = '';
+    gifAddLabel.style.display = (currentGifTab === 'created') ? 'block' : 'none';
+
+    if(currentGifTab === 'emojis'){
+      EMOJI_QUICKSET.forEach(function(em){
+        var cell = document.createElement('div');
+        cell.className = 'emoji-cell';
+        cell.textContent = em;
+        cell.addEventListener('click', function(){
+          if(!ws || ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify({ type:'message', text: em, replyTo: replyingTo }));
+          clearReply();
+          gifPanel.style.display = 'none';
+        });
+        gifGrid.appendChild(cell);
+      });
       return;
     }
-    gifGrid.innerHTML = '';
-    gifs.forEach(function(dataUrl){
+
+    var list = [];
+    if(currentGifTab === 'favorites') list = loadFavorites();
+    else if(currentGifTab === 'used') list = loadUsed();
+    else if(currentGifTab === 'created') list = loadCreated();
+    else if(currentGifTab === 'channel') list = channelImages;
+
+    if(list.length === 0){
+      var msg = currentGifTab === 'created' ? 'no gifs saved yet, add one below' : 'nothing here yet';
+      gifGrid.innerHTML = '<div class="gif-empty">' + msg + '</div>';
+      return;
+    }
+    list.forEach(function(dataUrl){
       var img = document.createElement('img');
       img.src = dataUrl;
       img.addEventListener('click', function(){
@@ -702,6 +812,15 @@
       gifGrid.appendChild(img);
     });
   }
+
+  gifTabs.addEventListener('click', function(e){
+    var btn = e.target.closest('.gif-tab');
+    if(!btn) return;
+    currentGifTab = btn.getAttribute('data-tab');
+    gifTabs.querySelectorAll('.gif-tab').forEach(function(t){ t.classList.toggle('active', t === btn); });
+    renderGifGrid();
+  });
+
   gifBtn.addEventListener('click', function(){
     var showing = gifPanel.style.display !== 'none';
     gifPanel.style.display = showing ? 'none' : 'block';
@@ -713,9 +832,9 @@
     var reader = new FileReader();
     reader.onload = function(){
       var dataUrl = reader.result;
-      var gifs = loadGifs();
+      var gifs = loadCreated();
       gifs.push(dataUrl);
-      saveGifs(gifs);
+      saveList('channelwave_gifs', gifs);
       renderGifGrid();
     };
     reader.readAsDataURL(file);
@@ -725,7 +844,42 @@
     if(!ws || ws.readyState !== WebSocket.OPEN) return;
     ws.send(JSON.stringify({ type:'message', text:'', image: dataUrl, replyTo: replyingTo }));
     clearReply();
+    rememberUsed(dataUrl);
   }
+
+  // ---- zoom modal: click any sticker/gif in chat to view it full size ----
+  var zoomBackdrop = document.getElementById('zoomBackdrop');
+  var zoomImg = document.getElementById('zoomImg');
+  var zoomClose = document.getElementById('zoomClose');
+  var zoomFav = document.getElementById('zoomFav');
+
+  function openZoom(src){
+    zoomImg.src = src;
+    var isFaved = loadFavorites().indexOf(src) !== -1;
+    zoomFav.textContent = isFaved ? '★' : '☆';
+    zoomFav.classList.toggle('faved', isFaved);
+    zoomBackdrop.classList.add('show');
+  }
+  zoomClose.addEventListener('click', function(){ zoomBackdrop.classList.remove('show'); });
+  zoomBackdrop.addEventListener('click', function(e){
+    if(e.target === zoomBackdrop) zoomBackdrop.classList.remove('show');
+  });
+  zoomFav.addEventListener('click', function(){
+    var src = zoomImg.src;
+    var favs = loadFavorites();
+    var idx = favs.indexOf(src);
+    if(idx === -1){
+      favs.unshift(src);
+      zoomFav.textContent = '★';
+      zoomFav.classList.add('faved');
+    }else{
+      favs.splice(idx, 1);
+      zoomFav.textContent = '☆';
+      zoomFav.classList.remove('faved');
+    }
+    saveList('channelwave_favorites', favs);
+    if(currentGifTab === 'favorites') renderGifGrid();
+  });
 
   // ---- reply state ----
   function setReply(mid, name, text){
@@ -953,6 +1107,7 @@
     }
     if(m.image){
       html += '<img class="gif-img" src="' + m.image + '">';
+      rememberChannelImage(m.image);
     }
 
     var mid = m.mid || '';
@@ -963,6 +1118,11 @@
     div.innerHTML = html;
     speaker.appendChild(div);
     speaker.scrollTop = speaker.scrollHeight;
+
+    var gifImgEl = div.querySelector('.gif-img');
+    if(gifImgEl){
+      gifImgEl.addEventListener('click', function(){ openZoom(gifImgEl.src); });
+    }
 
     if(mid){
       div.querySelector('.react-toggle').addEventListener('click', function(){
@@ -1029,6 +1189,7 @@
     currentChannel = ch;
     updateFreqReadout();
     clearTypingUsers();
+    channelImages = [];
     joinChannel(ch);
     if(notifyOn) resubscribePush();
   }
@@ -1141,11 +1302,47 @@
     sendBtn.disabled = false;
   }
 
+  // ---- paste an image straight into the message bar (like WhatsApp/iMessage) ----
+  var attachPreview = document.getElementById('attachPreview');
+  var attachPreviewImg = document.getElementById('attachPreviewImg');
+  var attachPreviewRemove = document.getElementById('attachPreviewRemove');
+  var attachedImage = null;
+
+  function setAttachedImage(dataUrl){
+    attachedImage = dataUrl;
+    attachPreviewImg.src = dataUrl;
+    attachPreview.style.display = 'flex';
+  }
+  function clearAttachedImage(){
+    attachedImage = null;
+    attachPreviewImg.src = '';
+    attachPreview.style.display = 'none';
+  }
+  attachPreviewRemove.addEventListener('click', clearAttachedImage);
+
+  msgInput.addEventListener('paste', function(e){
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for(var i=0; i<items.length; i++){
+      if(items[i].type && items[i].type.indexOf('image/') === 0){
+        var file = items[i].getAsFile();
+        if(!file) continue;
+        e.preventDefault();
+        var reader = new FileReader();
+        reader.onload = function(){ setAttachedImage(reader.result); };
+        reader.readAsDataURL(file);
+        break;
+      }
+    }
+  });
+
   function sendMessage(){
     var text = msgInput.value.trim();
-    if(!text || !ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type:'message', text: text, replyTo: replyingTo }));
+    if(!text && !attachedImage) return;
+    if(!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type:'message', text: text, image: attachedImage, replyTo: replyingTo }));
     msgInput.value = '';
+    if(attachedImage) rememberUsed(attachedImage);
+    clearAttachedImage();
     clearReply();
     hideMentionDropdown();
   }
