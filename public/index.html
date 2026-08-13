@@ -328,6 +328,23 @@
   }
   .ban-list div{ padding:2px 0; }
   .ban-list .empty{ font-style:italic; }
+
+  .settings-panel{
+    background:#0b0d10; border:1px solid #2a3038; border-radius:10px;
+    padding:8px; margin-top:6px; max-height:280px; overflow-y:auto;
+  }
+  .settings-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 4px; font-size:12.5px; color:var(--paper-dim);
+    border-bottom:1px solid #1c2027;
+  }
+  .settings-row:last-child{ border-bottom:none; }
+  .settings-row .icon-btn{
+    padding:5px 10px; font-size:11px;
+  }
+  .settings-row .lock-btn{
+    padding:5px 10px; font-size:13px;
+  }
 </style>
 </head>
 <body>
@@ -345,20 +362,52 @@
       <input type="number" id="freqJump" min="1" max="100" value="1">
       <button id="jumpGo">GO</button>
       <div class="status-dot" id="statusDot" title="connection status"></div>
-      <button class="lock-btn" id="lockBtn" title="channel privacy">🔓</button>
-      <button class="lock-btn" id="claimOwnerBtn" title="claim ownership with a code">🔑</button>
+      <button class="lock-btn" id="settingsBtn" title="settings">⚙️</button>
     </div>
 
     <div class="sub-row">
       <input id="nameInput" maxlength="18" placeholder="pick a name">
-      <button class="icon-btn" id="colorBtn" title="name color">🖌️</button>
-      <input type="color" id="colorPicker" value="#5ec8ff" style="display:none;">
       <span class="member-count" id="memberCount"></span>
-      <button class="icon-btn" id="filterBtn" title="no slur mode">🚫</button>
-      <button class="icon-btn" id="notifyBtn" title="notifications">🔔</button>
-      <button class="icon-btn" id="inviteBtn" title="invite someone">👥</button>
-      <button class="icon-btn" id="resetBtn" title="reset channel" style="display:none;">🗑️</button>
-      <button class="icon-btn" id="banBtn" title="ban management" style="display:none;">🚷</button>
+    </div>
+
+    <div class="settings-panel" id="settingsPanel" style="display:none;">
+      <div class="settings-row">
+        <span>🖌️ name color</span>
+        <button class="icon-btn" id="colorBtn">pick</button>
+        <input type="color" id="colorPicker" value="#5ec8ff" style="display:none;">
+      </div>
+      <div class="settings-row">
+        <span>set name to unknown</span>
+        <button class="icon-btn" id="anonBtn">?</button>
+      </div>
+      <div class="settings-row">
+        <span>🚫 no slur mode</span>
+        <button class="icon-btn" id="filterBtn">toggle</button>
+      </div>
+      <div class="settings-row">
+        <span>🔔 notifications</span>
+        <button class="icon-btn" id="notifyBtn">toggle</button>
+      </div>
+      <div class="settings-row">
+        <span>👥 invite someone</span>
+        <button class="icon-btn" id="inviteBtn">invite</button>
+      </div>
+      <div class="settings-row">
+        <span>🔒 channel privacy</span>
+        <button class="lock-btn" id="lockBtn">🔓</button>
+      </div>
+      <div class="settings-row">
+        <span>🔑 claim ownership</span>
+        <button class="icon-btn" id="claimOwnerBtn">claim</button>
+      </div>
+      <div class="settings-row" id="resetRow" style="display:none;">
+        <span>🗑️ reset channel</span>
+        <button class="icon-btn" id="resetBtn">reset</button>
+      </div>
+      <div class="settings-row" id="banRow" style="display:none;">
+        <span>🚷 ban management</span>
+        <button class="icon-btn" id="banBtn">manage</button>
+      </div>
     </div>
 
     <div class="speaker" id="speaker">
@@ -477,6 +526,13 @@
   var filterBtn = document.getElementById('filterBtn');
   var resetBtn = document.getElementById('resetBtn');
   var banBtn = document.getElementById('banBtn');
+  var resetRow = document.getElementById('resetRow');
+  var banRow = document.getElementById('banRow');
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsPanel = document.getElementById('settingsPanel');
+  settingsBtn.addEventListener('click', function(){
+    settingsPanel.style.display = (settingsPanel.style.display === 'none') ? 'block' : 'none';
+  });
   var banModalBackdrop = document.getElementById('banModalBackdrop');
   var banModalInput = document.getElementById('banModalInput');
   var banUserGo = document.getElementById('banUserGo');
@@ -932,8 +988,8 @@
   }
 
   function updateResetBtnVisibility(){
-    resetBtn.style.display = (isOwner && isPrivate) ? 'inline-block' : 'none';
-    banBtn.style.display = isOwner ? 'inline-block' : 'none';
+    resetRow.style.display = (isOwner && isPrivate) ? 'flex' : 'none';
+    banRow.style.display = isOwner ? 'flex' : 'none';
   }
 
   // ---- typing indicator ----
@@ -1281,6 +1337,12 @@
   });
 
   var renameDebounce = null;
+  var anonBtn = document.getElementById('anonBtn');
+  anonBtn.addEventListener('click', function(){
+    nameInput.value = 'unknown';
+    nameInput.dispatchEvent(new Event('input'));
+  });
+
   nameInput.addEventListener('input', function(){
     var has = nameInput.value.trim().length > 0;
     msgInput.disabled = !has;
@@ -1291,7 +1353,7 @@
     clearTimeout(renameDebounce);
     renameDebounce = setTimeout(function(){
       if(has && ws && ws.readyState === WebSocket.OPEN){
-        ws.send(JSON.stringify({ type:'rename', name: getName() }));
+        ws.send(JSON.stringify({ type:'rename', name: getName(), silent: true }));
       }
     }, 500);
   });
